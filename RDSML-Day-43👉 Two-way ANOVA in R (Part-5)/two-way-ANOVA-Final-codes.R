@@ -48,11 +48,6 @@ summs <- d %>%
     .groups = "drop"
   )
 
-install.packages("broom.helpers")
-library(broom.helpers)
-install.packages("patchwork")
-library(patchwork)
-library(ggplot2)
 p_raw <- ggplot(d, aes(irr, y, color=fert)) +
   geom_jitter(width=.08, height=0, alpha=.4) +
   stat_summary(fun=mean, geom="point", position=position_dodge(width=.4), size=2.4) +
@@ -71,6 +66,7 @@ p_ci <- ggplot(summs, aes(irr, mean, group=fert, color=fert)) +
 # Type-III ANOVA is robust for unbalanced data (given contr.sum above)
 
 m <- aov(y ~ fert * irr, data = d)
+summary(m)
 
 # Publication-ready ANOVA (Type III)
 
@@ -95,13 +91,11 @@ lev <- car::leveneTest(y ~ fert*irr, data = d, center = median)
 cat("\nLevene test (median-based) for homogeneity of variance:\n"); print(lev)
 
 # Comprehensive diagnostics (performance)
+
+install.packages("see")
+
 cat("\nperformance::check_model(m):\n")
 print(performance::check_model(m))  # plots/flags common issues
-
-# Optional: per-cell normality (small n → very low power; use only as a rough look)
-cell_tests <- d %>% group_by(fert, irr) %>%
-  summarise(sw_p = tryCatch(shapiro.test(y)$p.value, error=function(e) NA_real_), .groups="drop")
-print(cell_tests)
 
 ## ── 5) Estimated marginal means (EMMs) & contrasts ----
 emm_int <- emmeans(m, ~ fert * irr)
@@ -135,37 +129,9 @@ p_emm <- ggplot(emm_df, aes(irr, emmean, group=fert, color=fert)) +
   labs(title="EMMs ± 95% CI with CLD letters", x="Irrigation", y="Estimated marginal mean")
 print(p_emm)
 
-## ── 6) Influence & outlier check (optional but useful) ----
-infl <- broom::augment(m) %>%
-  mutate(.cooks_flag = abs(.cooksd) > (4/ (nrow(d) - length(coef(m)))),
-         .stdres_flag = abs(.std.resid) > 3)
 
-cat("\nPossible influential points (Cook's D > 4/df or |Std.Resid| > 3):\n")
-print(infl %>% filter(.cooks_flag | .stdres_flag))
-
-# Quick influence plot
-car::influencePlot(m, main="Influence Plot (Cook's distance)", sub="Look for leverage/outliers")
-
-## ── 7) Nice reporting helpers ----
-# APA-like model summary with effect sizes
-report_lines <- glue::glue(
-  "ANOVA (Type III): fert, irr, and their interaction tested on yield.\n",
-  "Partial eta^2 shown in table; use generalized eta^2 for between-design comparisons."
-)
-
-# Save key outputs
-write.csv(aov_tab, "anova_table_typeIII_with_effectsizes.csv", row.names = FALSE)
-saveRDS(list(
-  model = m,
-  aov_table = aov_tab,
-  emm_interaction = emm_int,
-  fert_within_irr = fert_within_irr,
-  irr_within_fert = irr_within_fert,
-  cld_letters = cld_letters,
-  influence = infl
-), file = "two_way_anova_outputs.rds")
-
-## ── 8) (Optional) Alternatives if assumptions struggle ----
-# Robust ANOVA (heteroscedastic): WRS2::t2way(y, fert, irr, data=d)
-# Nonparametric alignment rank transform: ARTool::art(y ~ fert*irr, data=d)
-# (Install those packages if you need them)
+library(effectsize) 
+# From the model table (Type III to match tests above) 
+eta_squared(m, partial = FALSE, alternative="two.sided") 
+eta_squared(m, partial = TRUE) 
+# omega_squared(m)
