@@ -78,3 +78,4 @@ scale_num <- function(df){
 
 train_scaled <- scale_num(train_set)
 test_scaled <- scale_num(test_set)
+
