@@ -66,12 +66,13 @@ train_sds <- sapply(train_set[, num_cols], sd)
 
 # Scale Function
 # 4 ta individual column er value theke mean bad diye
-#sd diye vag korbo,tai ei function
-#last e df dilam jeno full dataframe cover kore
+# sd diye vag korbo,tai ei function
+# last e df dilam jeno full dataframe cover kore
 
 scale_num <- function(df){
-  df[, num_cols] <-sweep(df[, num_cols], 2, train_means, "-")
-  df[, num_cols] <-sweep(df[, num_cols], 2, train_sds, "/")
+  df[, num_cols] <- sweep(df[, num_cols], 2, train_means, "-")
+  df[, num_cols] <- sweep(df[, num_cols], 2, train_sds, "/")
+  df
 }
 
 # train_set ke df er moddhe dhukiye dite hobe
@@ -79,4 +80,34 @@ scale_num <- function(df){
 train_scaled <- scale_num(train_set)
 test_scaled <- scale_num(test_set)
 
+# Building a linear regression model
 
+lm_model <- lm(cnt ~ ., data = train_scaled)
+
+summary(lm_model)
+
+# Now we will perform prediction
+
+lm_pred <- predict(lm_model, newdata = test_scaled)
+
+# Evaluation matrix for linear regression
+# Calculating root mean square error
+
+rmse <- function(actual, pred) sqrt(mean((actual-pred)^2))
+
+lm_rmse <- rmse(test_scaled$cnt, lm_pred) 
+lm_rmse
+
+# Calculating mean absolute error
+
+mae <- function(actual,pred) mean(abs(actual-pred))
+lm_mae <- mae(test_scaled$cnt, lm_pred)
+lm_mae
+
+# Building support vector regression model (svr) 
+
+svr <- svm (cnt ~ . , data = train_scaled, kernel = "linear")
+svr_pred <- predict(svr, newdata = test_scaled)
+svr_pred
+svr_rmse <- rmse(test_scaled$cnt, svr_pred) 
+svr_mae <- mae(test_scaled$cnt, svr_pred)
