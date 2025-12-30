@@ -16,6 +16,7 @@ training_set = subset(dataset, split == TRUE)
 test_set = subset(dataset, split == FALSE)
 
 # Feature Scaling
+# -3 means 3 no column ke bad diye baki dui column scaled hobe
 training_set[-3] = scale(training_set[-3])
 test_set[-3] = scale(test_set[-3])
 
@@ -26,6 +27,7 @@ classifier = glm(formula = Purchased ~ .,
 
 # Predicting the Test set results
 prob_pred = predict(classifier, type = 'response', newdata = test_set[-3])
+
 y_pred = ifelse(prob_pred > 0.5, 1, 0)
 
 # Making the Confusion Matrix
