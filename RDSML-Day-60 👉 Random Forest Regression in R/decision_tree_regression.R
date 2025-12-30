@@ -33,6 +33,8 @@ ggplot() +
   xlab('Dosage') +
   ylab('Effectiveness')
 
+# Tree visualization
+
  install.packages("rpart.plot")
 library(rpart.plot)
 
